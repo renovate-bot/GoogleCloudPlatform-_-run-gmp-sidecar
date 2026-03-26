@@ -179,17 +179,17 @@ type TransformQuery string
 // FlattenResourceAttribute returns an expression that brings down a resource attribute to a
 // metric attribute.
 func FlattenResourceAttribute(resourceAttribute, metricAttribute string) TransformQuery {
-	return TransformQuery(fmt.Sprintf(`set(attributes["%s"], resource.attributes["%s"])`, metricAttribute, resourceAttribute))
+	return TransformQuery(fmt.Sprintf(`set(datapoint.attributes["%s"], resource.attributes["%s"])`, metricAttribute, resourceAttribute))
 }
 
 // GroupByAttribute returns an expression that makes a metric attribute into a resource attribute.
 func GroupByAttribute(resourceAttribute, metricAttribute string) TransformQuery {
-	return TransformQuery(fmt.Sprintf(`set(resource.attributes["%s"], attributes["%s"]) where attributes["%s"] != nil`, resourceAttribute, metricAttribute, metricAttribute))
+	return TransformQuery(fmt.Sprintf(`set(resource.attributes["%s"], datapoint.attributes["%s"]) where datapoint.attributes["%s"] != nil`, resourceAttribute, metricAttribute, metricAttribute))
 }
 
 // DeleteMetricAttribute returns an expression that removes the metric attribute specified.
 func DeleteMetricAttribute(metricAttribute string) TransformQuery {
-	return TransformQuery(fmt.Sprintf(`delete_key(attributes, "%s")`, metricAttribute))
+	return TransformQuery(fmt.Sprintf(`delete_key(datapoint.attributes, "%s")`, metricAttribute))
 }
 
 // PrefixResourceAttribute prefixes the resource attribute with another resource
@@ -205,7 +205,7 @@ func PrefixResourceAttribute(destResourceAttribute, srcResourceAttribute, delimi
 
 // AddMetricLabel adds a new metric attribute. If it already exists, then it is overwritten.
 func AddMetricLabel(key, val string) TransformQuery {
-	return TransformQuery(fmt.Sprintf(`set(attributes["%s"], "%s")`, key, val))
+	return TransformQuery(fmt.Sprintf(`set(datapoint.attributes["%s"], "%s")`, key, val))
 }
 
 // Transform returns a transform processor object that executes statements on statementType data.
@@ -231,6 +231,6 @@ func ExtractCountMetric(monotonic bool, metricName string) []string {
 		monotonicStr = "true"
 	}
 	return []string{
-		fmt.Sprintf(`extract_count_metric(%s) where name == "%s"`, monotonicStr, metricName),
+		fmt.Sprintf(`extract_count_metric(%s) where metric.name == "%s"`, monotonicStr, metricName),
 	}
 }

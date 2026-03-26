@@ -80,26 +80,26 @@ processors:
     metric_statements:
     - context: datapoint
       statements:
-      - set(attributes["instanceId"], resource.attributes["faas.id"])
+      - set(datapoint.attributes["instanceId"], resource.attributes["faas.id"])
   transform/application-metrics_4:
     metric_statements:
     - context: datapoint
       statements:
-      - set(resource.attributes["gcp.project.id"], attributes["project_id"]) where
-        attributes["project_id"] != nil
-      - delete_key(attributes, "project_id")
+      - set(resource.attributes["gcp.project.id"], datapoint.attributes["project_id"])
+        where datapoint.attributes["project_id"] != nil
+      - delete_key(datapoint.attributes, "project_id")
   transform/run-gmp-self-metrics_1:
     error_mode: ignore
     metric_statements:
     - context: metric
       statements:
-      - extract_count_metric(true) where name == "grpc_client_attempt_duration"
+      - extract_count_metric(true) where metric.name == "grpc_client_attempt_duration"
   transform/run-gmp-self-metrics_4:
     metric_statements:
     - context: datapoint
       statements:
-      - set(attributes["namespace"], "test_service")
-      - set(attributes["cluster"], "__run__")
+      - set(datapoint.attributes["namespace"], "test_service")
+      - set(datapoint.attributes["cluster"], "__run__")
       - replace_pattern(resource.attributes["service.instance.id"], "^(\\d+)$$", Concat([resource.attributes["faas.id"],
         "$$1"], ":"))
 receivers:
