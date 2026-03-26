@@ -195,4 +195,9 @@ service:
       - prometheus/run-gmp-self-metrics
   telemetry:
     metrics:
-      address: 0.0.0.0:42
+      readers:
+      - pull:
+          exporter:
+            prometheus:
+              host: 0.0.0.0
+              port: 42

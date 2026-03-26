@@ -28,6 +28,8 @@ import (
 	"github.com/prometheus/prometheus/model/relabel"
 
 	yaml "github.com/goccy/go-yaml"
+	"github.com/goccy/go-yaml/ast"
+	"github.com/goccy/go-yaml/parser"
 	prommodel "github.com/prometheus/common/model"
 	promconfig "github.com/prometheus/prometheus/config"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -183,9 +185,14 @@ func ReadConfigFromFile(ctx context.Context, path string) (*RunMonitoringConfig,
 
 	// Unmarshal the user config over the default config. If some options are unspecified
 	// the collector uses the default settings for those options. For example, if not specified
-	// targetLabels is set to {"revision", "service", "configuration"}
-	if err := yaml.UnmarshalContext(ctx, data, config, yaml.Strict()); err != nil {
-		return nil, err
+	// targetLabels is set to {"revision", "service", "configuration"}.
+	// Newer versions of go-yaml (1.18+) treat empty documents as being explicitly null,
+	// which will cause the default config struct to be overwritten.
+	// So skip unmarshalling if the input document is empty.
+	if !isEmptyYamlFile(data) {
+		if err := yaml.UnmarshalContext(ctx, data, config, yaml.Strict()); err != nil {
+			return nil, err
+		}
 	}
 
 	// Validate the RunMonitoring config
@@ -235,6 +242,22 @@ func (rc *RunMonitoringConfig) OTelReceiverPipeline() (*otel.ReceiverPipeline, e
 		},
 		Processors: processors,
 	}, nil
+}
+
+// isEmptyYamlFile returns true if the given data represents an empty YAML file.
+func isEmptyYamlFile(data []byte) bool {
+	file, err := parser.ParseBytes(data, parser.Mode(0))
+	if err != nil {
+		return false
+	}
+	for _, doc := range file.Docs {
+		if doc.Body != nil {
+			if _, isNull := doc.Body.(*ast.NullNode); !isNull {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 // Validate validates the RunMonitoring config.
