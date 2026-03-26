@@ -95,7 +95,7 @@ func (r AgentSelfMetrics) OTelReceiverPipeline() otel.ReceiverPipeline {
 			otel.TransformationMetrics(
 				otel.AddMetricLabel("namespace", r.Service),
 				otel.AddMetricLabel("cluster", "__run__"),
-				otel.PrefixResourceAttribute("service.instance.id", "faas.id", ":"),
+				otel.PrefixResourceAttribute("service.instance.id", "faas.instance", ":"),
 			),
 			otel.GroupByGMPAttrs(),
 		},

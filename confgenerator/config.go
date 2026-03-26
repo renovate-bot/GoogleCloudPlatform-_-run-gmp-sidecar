@@ -210,15 +210,15 @@ func (rc *RunMonitoringConfig) OTelReceiverPipeline() (*otel.ReceiverPipeline, e
 		return nil, err
 	}
 
-	// Prefix the `instance` resource label with the faas.id.
+	// Prefix the `instance` resource label with the faas.instance.
 	processors := []otel.Component{
 		otel.GCPResourceDetector(),
-		otel.TransformationMetrics(otel.PrefixResourceAttribute("service.instance.id", "faas.id", ":")),
+		otel.TransformationMetrics(otel.PrefixResourceAttribute("service.instance.id", "faas.instance", ":")),
 	}
 
 	// If the users configure to add the instance metadata, add it as a metric label.
 	if rc.Spec.TargetLabels.Metadata != nil && contains(*rc.Spec.TargetLabels.Metadata, "instance") {
-		processors = append(processors, otel.TransformationMetrics(otel.FlattenResourceAttribute("faas.id", cloudRunInstanceLabel)))
+		processors = append(processors, otel.TransformationMetrics(otel.FlattenResourceAttribute("faas.instance", cloudRunInstanceLabel)))
 	}
 
 	// Group by the GMP attributes.
@@ -365,8 +365,8 @@ func endpointScrapeConfig(id, cfgName string, ep ScrapeEndpoint, relabelCfgs []*
 			TargetLabel: "namespace",
 			Replacement: env.Service,
 		},
-		// The `instance` label will be <faas.id>:<port> in the final metric.
-		// But since <faas.id> is unavailable until the gcp resource detector
+		// The `instance` label will be <faas.instance>:<port> in the final metric.
+		// But since <faas.instance> is unavailable until the gcp resource detector
 		// runs later in the pipeline we just populate the port for now.
 		//
 		// See the usage of PrefixResourceAttribute for when the rest of the

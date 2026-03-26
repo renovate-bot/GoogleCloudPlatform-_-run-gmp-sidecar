@@ -74,13 +74,13 @@ processors:
     metric_statements:
     - context: datapoint
       statements:
-      - replace_pattern(resource.attributes["service.instance.id"], "^(\\d+)$$", Concat([resource.attributes["faas.id"],
+      - replace_pattern(resource.attributes["service.instance.id"], "^(\\d+)$$", Concat([resource.attributes["faas.instance"],
         "$$1"], ":"))
   transform/application-metrics_2:
     metric_statements:
     - context: datapoint
       statements:
-      - set(datapoint.attributes["instanceId"], resource.attributes["faas.id"])
+      - set(datapoint.attributes["instanceId"], resource.attributes["faas.instance"])
   transform/application-metrics_4:
     metric_statements:
     - context: datapoint
@@ -100,7 +100,7 @@ processors:
       statements:
       - set(datapoint.attributes["namespace"], "test_service")
       - set(datapoint.attributes["cluster"], "__run__")
-      - replace_pattern(resource.attributes["service.instance.id"], "^(\\d+)$$", Concat([resource.attributes["faas.id"],
+      - replace_pattern(resource.attributes["service.instance.id"], "^(\\d+)$$", Concat([resource.attributes["faas.instance"],
         "$$1"], ":"))
 receivers:
   prometheus/application-metrics:
