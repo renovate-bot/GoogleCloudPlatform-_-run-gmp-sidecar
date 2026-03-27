@@ -32,9 +32,6 @@ replaces:
 - from: github.com/prometheus/prometheus
   to: github.com/jefferbrecht/prometheus v0.0.0-20260325153347-5774096a9705
   reason: "Point to our fork of Prometheus at branch: feature/shutdownscrape_v0.54.1"
-- from: google.golang.org/grpc
-  to: google.golang.org/grpc v1.79.3
-  reason: ""
 components:
   receivers:
   - otlp

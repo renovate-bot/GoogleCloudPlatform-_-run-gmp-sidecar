@@ -49,6 +49,4 @@ replaces:
 - github.com/mattn/go-ieproxy v0.0.9 => github.com/mattn/go-ieproxy v0.0.1
 # Point to our fork of Prometheus at branch: feature/shutdownscrape_v0.54.1
 - github.com/prometheus/prometheus => github.com/jefferbrecht/prometheus v0.0.0-20260325153347-5774096a9705
-# 
-- google.golang.org/grpc => google.golang.org/grpc v1.79.3
 
