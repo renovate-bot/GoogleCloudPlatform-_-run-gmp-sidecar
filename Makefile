@@ -21,8 +21,12 @@ BUILD_X2 := -X $(BUILD_INFO_IMPORT_PATH).Version=$(PKG_VERSION)
 BUILD_X3 := -X $(ENTRYPOINT_BUILD_INFO_IMPORT_PATH).Version=$(PKG_VERSION)
 LD_FLAGS := -ldflags "${BUILD_X1} ${BUILD_X2} ${BUILD_X3}"
 
-TOOLS_DIR := collector/internal/tools
-DISTRORGEN_TOOLS_DIR := $(PWD)/.tools
+PROJECT_ROOT := $(shell git rev-parse --show-toplevel)
+
+TOOLS_DIR := $(PROJECT_ROOT)/collector/internal/tools
+DISTROGEN_TOOLS_DIR := $(PROJECT_ROOT)/.tools
+
+MDATAGEN_INSTALL_SCRIPT := $(PROJECT_ROOT)/scripts/download_mdatagen.sh
 
 .EXPORT_ALL_VARIABLES:
 
@@ -50,30 +54,27 @@ update-components:
 		grep "^github.com/open-telemetry/opentelemetry-collector-contrib" | \
 		xargs -t -I '{}' go get {}@$(OTEL_VER)
 	go mod tidy
-	cd $(TOOLS_DIR) && go get -u go.opentelemetry.io/collector/cmd/mdatagen@$(OTEL_VER)
-	cd $(TOOLS_DIR) && go mod tidy
 
-# We can bring this target back when https://github.com/open-telemetry/opentelemetry-collector/issues/8063 is resolved.
 update-opentelemetry:
 	$(MAKE) update-components
 	$(MAKE) install-tools
-	$(MAKE) GO_BUILD_TAGS=gpu generate
+	cd collector/receiver/prometheusreceiver && $(MAKE) generate
+	cd collector/exporter/googlemanagedprometheusexporter && $(MAKE) generate
 
 # --------------------------
 #  Tools
 # --------------------------
 
-DISTROGEN_BIN ?= $(DISTRORGEN_TOOLS_DIR)/distrogen
-MDATAGEN_BIN ?= $(DISTRORGEN_TOOLS_DIR)/mdatagen
+DISTROGEN_BIN ?= $(DISTROGEN_TOOLS_DIR)/distrogen
+MDATAGEN_BIN ?= $(DISTROGEN_TOOLS_DIR)/mdatagen
 
 .PHONY: install-tools
-install-tools:
+install-tools: $(MDATAGEN_BIN)
 	cd $(TOOLS_DIR) && \
 		go install \
 			github.com/client9/misspell/cmd/misspell \
 			github.com/golangci/golangci-lint/cmd/golangci-lint \
 			github.com/google/addlicense \
-			go.opentelemetry.io/collector/cmd/mdatagen \
 			golang.org/x/tools/cmd/goimports
 
 .PHONY: addlicense
@@ -94,11 +95,11 @@ misspell:
 
 $(DISTROGEN_BIN):
 	$(MAKE) distrogen-tools-dir
-	GOBIN=$(DISTRORGEN_TOOLS_DIR) go install github.com/GoogleCloudPlatform/opentelemetry-operations-collector/cmd/distrogen@$(shell cat .distrogen/VERSION)
+	GOBIN=$(DISTROGEN_TOOLS_DIR) go install github.com/GoogleCloudPlatform/opentelemetry-operations-collector/cmd/distrogen@$(shell cat .distrogen/VERSION)
 
 $(MDATAGEN_BIN):
 	$(MAKE) distrogen-tools-dir
-	GOBIN=$(DISTRORGEN_TOOLS_DIR) bash ./scripts/download_mdatagen.sh v$(OTEL_VERSION)
+	GOBIN=$(DISTROGEN_TOOLS_DIR) bash ./scripts/download_mdatagen.sh $(OTEL_VERSION)
 
 DISTROGEN_QUERY = $(DISTROGEN_BIN) query --spec $(SPEC_FILE) --field
 
@@ -108,7 +109,7 @@ DISTROGEN_QUERY = $(DISTROGEN_BIN) query --spec $(SPEC_FILE) --field
 # directory is newer than the tools inside it.
 .PHONY: distrogen-tools-dir
 distrogen-tools-dir:
-	@mkdir -p $(DISTRORGEN_TOOLS_DIR)
+	@mkdir -p $(DISTROGEN_TOOLS_DIR)
 
 .PHONY: distrogen
 distrogen: $(DISTROGEN_BIN)

@@ -18,5 +18,5 @@ import (
 	_ "github.com/client9/misspell/cmd/misspell"
 	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
 	_ "github.com/google/addlicense"
-	_ "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen"
+	_ "golang.org/x/tools/cmd/goimports"
 )

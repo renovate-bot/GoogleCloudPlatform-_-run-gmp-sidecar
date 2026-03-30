@@ -1,0 +1,6 @@
+PROJECT_ROOT := $(shell git rev-parse --show-toplevel)
+ROOT_TOOLS_DIR := $(PROJECT_ROOT)/.tools
+
+.PHONY: generate
+generate:
+	PATH="$(ROOT_TOOLS_DIR):$(PATH)" go generate ./...
