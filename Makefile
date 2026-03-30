@@ -56,9 +56,10 @@ update-components:
 	go mod tidy
 
 update-opentelemetry:
-# 	$(MAKE) update-components
+	$(MAKE) update-components
 	$(MAKE) install-tools
 	cd collector/receiver/prometheusreceiver && $(MAKE) generate
+	cd collector/exporter/googlemanagedprometheusexporter && $(MAKE) generate
 
 # --------------------------
 #  Tools
