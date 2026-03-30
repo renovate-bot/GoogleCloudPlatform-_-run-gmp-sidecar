@@ -24,7 +24,7 @@ LD_FLAGS := -ldflags "${BUILD_X1} ${BUILD_X2} ${BUILD_X3}"
 PROJECT_ROOT := $(shell git rev-parse --show-toplevel)
 
 TOOLS_DIR := $(PROJECT_ROOT)/collector/internal/tools
-DISTROGEN_TOOLS_DIR := $(PWD)/.tools
+DISTROGEN_TOOLS_DIR := $(PROJECT_ROOT)/.tools
 
 MDATAGEN_INSTALL_SCRIPT := $(PROJECT_ROOT)/scripts/download_mdatagen.sh
 
