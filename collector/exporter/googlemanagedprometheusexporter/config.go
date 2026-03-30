@@ -20,7 +20,7 @@ type Config struct {
 
 	// Timeout for all API calls. If not set, defaults to 12 seconds.
 	TimeoutSettings exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	QueueSettings   exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
+	QueueSettings   exporterhelper.QueueBatchConfig   `mapstructure:"sending_queue"`
 }
 
 // GMPConfig is a subset of the collector config applicable to the GMP exporter.

@@ -9,10 +9,10 @@ processors:
       include:
         match_type: strict
         metric_names:
-        - otelcol_process_uptime
-        - otelcol_process_memory_rss
-        - grpc_client_attempt_duration
-        - googlecloudmonitoring_point_count
+        - otelcol_process_uptime_seconds_total
+        - otelcol_process_memory_rss_bytes
+        - grpc_client_attempt_duration_seconds
+        - googlecloudmonitoring_point_count_total
   groupbyattrs/application-metrics_3:
     keys:
     - namespace
@@ -24,7 +24,7 @@ processors:
   metricstransform/run-gmp-self-metrics_2:
     transforms:
     - action: update
-      include: otelcol_process_uptime
+      include: otelcol_process_uptime_seconds_total
       new_name: agent/uptime
       operations:
       - action: toggle_scalar_data_type
@@ -36,14 +36,14 @@ processors:
         label_set:
         - version
     - action: update
-      include: otelcol_process_memory_rss
+      include: otelcol_process_memory_rss_bytes
       new_name: agent/memory_usage
       operations:
       - action: aggregate_labels
         aggregation_type: sum
         label_set: []
     - action: update
-      include: grpc_client_attempt_duration_count
+      include: grpc_client_attempt_duration_seconds_count
       new_name: agent/api_request_count
       operations:
       - action: update_label
@@ -54,7 +54,7 @@ processors:
         label_set:
         - state
     - action: update
-      include: googlecloudmonitoring_point_count
+      include: googlecloudmonitoring_point_count_total
       new_name: agent/monitoring/point_count
       operations:
       - action: toggle_scalar_data_type
@@ -74,33 +74,33 @@ processors:
     metric_statements:
     - context: datapoint
       statements:
-      - replace_pattern(resource.attributes["service.instance.id"], "^(\\d+)$$", Concat([resource.attributes["faas.id"],
+      - replace_pattern(resource.attributes["service.instance.id"], "^(\\d+)$$", Concat([resource.attributes["faas.instance"],
         "$$1"], ":"))
   transform/application-metrics_2:
     metric_statements:
     - context: datapoint
       statements:
-      - set(attributes["instanceId"], resource.attributes["faas.id"])
+      - set(datapoint.attributes["instanceId"], resource.attributes["faas.instance"])
   transform/application-metrics_4:
     metric_statements:
     - context: datapoint
       statements:
-      - set(resource.attributes["gcp.project.id"], attributes["project_id"]) where
-        attributes["project_id"] != nil
-      - delete_key(attributes, "project_id")
+      - set(resource.attributes["gcp.project.id"], datapoint.attributes["project_id"])
+        where datapoint.attributes["project_id"] != nil
+      - delete_key(datapoint.attributes, "project_id")
   transform/run-gmp-self-metrics_1:
     error_mode: ignore
     metric_statements:
     - context: metric
       statements:
-      - extract_count_metric(true) where name == "grpc_client_attempt_duration"
+      - extract_count_metric(true) where metric.name == "grpc_client_attempt_duration_seconds"
   transform/run-gmp-self-metrics_4:
     metric_statements:
     - context: datapoint
       statements:
-      - set(attributes["namespace"], "test_service")
-      - set(attributes["cluster"], "__run__")
-      - replace_pattern(resource.attributes["service.instance.id"], "^(\\d+)$$", Concat([resource.attributes["faas.id"],
+      - set(datapoint.attributes["namespace"], "test_service")
+      - set(datapoint.attributes["cluster"], "__run__")
+      - replace_pattern(resource.attributes["service.instance.id"], "^(\\d+)$$", Concat([resource.attributes["faas.instance"],
         "$$1"], ":"))
 receivers:
   prometheus/application-metrics:
@@ -200,4 +200,9 @@ service:
       - prometheus/run-gmp-self-metrics
   telemetry:
     metrics:
-      address: 0.0.0.0:42
+      readers:
+      - pull:
+          exporter:
+            prometheus:
+              host: 0.0.0.0
+              port: 42

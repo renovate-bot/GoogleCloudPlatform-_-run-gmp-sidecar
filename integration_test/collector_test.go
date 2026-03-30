@@ -107,7 +107,7 @@ func setupPrometheusTestCase(t *testing.T, collector prometheus.Collector) (tc *
 	// Set up the collector.
 	agentProc := testbed.NewChildProcessCollector(testbed.WithAgentExePath("../bin/rungmpcol"))
 	configStr := createConfigYaml(t, sender, receiver)
-	configCleanup, err := agentProc.PrepareConfig(configStr)
+	configCleanup, err := agentProc.PrepareConfig(t, configStr)
 	require.NoError(t, err)
 
 	// Set up the test case and data provider.

@@ -28,6 +28,8 @@ import (
 	"github.com/prometheus/prometheus/model/relabel"
 
 	yaml "github.com/goccy/go-yaml"
+	"github.com/goccy/go-yaml/ast"
+	"github.com/goccy/go-yaml/parser"
 	prommodel "github.com/prometheus/common/model"
 	promconfig "github.com/prometheus/prometheus/config"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -183,9 +185,14 @@ func ReadConfigFromFile(ctx context.Context, path string) (*RunMonitoringConfig,
 
 	// Unmarshal the user config over the default config. If some options are unspecified
 	// the collector uses the default settings for those options. For example, if not specified
-	// targetLabels is set to {"revision", "service", "configuration"}
-	if err := yaml.UnmarshalContext(ctx, data, config, yaml.Strict()); err != nil {
-		return nil, err
+	// targetLabels is set to {"revision", "service", "configuration"}.
+	// Newer versions of go-yaml (1.18+) treat empty documents as being explicitly null,
+	// which will cause the default config struct to be overwritten.
+	// So skip unmarshalling if the input document is empty.
+	if !isEmptyYamlFile(data) {
+		if err := yaml.UnmarshalContext(ctx, data, config, yaml.Strict()); err != nil {
+			return nil, err
+		}
 	}
 
 	// Validate the RunMonitoring config
@@ -203,15 +210,15 @@ func (rc *RunMonitoringConfig) OTelReceiverPipeline() (*otel.ReceiverPipeline, e
 		return nil, err
 	}
 
-	// Prefix the `instance` resource label with the faas.id.
+	// Prefix the `instance` resource label with the faas.instance.
 	processors := []otel.Component{
 		otel.GCPResourceDetector(),
-		otel.TransformationMetrics(otel.PrefixResourceAttribute("service.instance.id", "faas.id", ":")),
+		otel.TransformationMetrics(otel.PrefixResourceAttribute("service.instance.id", "faas.instance", ":")),
 	}
 
 	// If the users configure to add the instance metadata, add it as a metric label.
 	if rc.Spec.TargetLabels.Metadata != nil && contains(*rc.Spec.TargetLabels.Metadata, "instance") {
-		processors = append(processors, otel.TransformationMetrics(otel.FlattenResourceAttribute("faas.id", cloudRunInstanceLabel)))
+		processors = append(processors, otel.TransformationMetrics(otel.FlattenResourceAttribute("faas.instance", cloudRunInstanceLabel)))
 	}
 
 	// Group by the GMP attributes.
@@ -235,6 +242,22 @@ func (rc *RunMonitoringConfig) OTelReceiverPipeline() (*otel.ReceiverPipeline, e
 		},
 		Processors: processors,
 	}, nil
+}
+
+// isEmptyYamlFile returns true if the given data represents an empty YAML file.
+func isEmptyYamlFile(data []byte) bool {
+	file, err := parser.ParseBytes(data, parser.Mode(0))
+	if err != nil {
+		return false
+	}
+	for _, doc := range file.Docs {
+		if doc.Body != nil {
+			if _, isNull := doc.Body.(*ast.NullNode); !isNull {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 // Validate validates the RunMonitoring config.
@@ -342,8 +365,8 @@ func endpointScrapeConfig(id, cfgName string, ep ScrapeEndpoint, relabelCfgs []*
 			TargetLabel: "namespace",
 			Replacement: env.Service,
 		},
-		// The `instance` label will be <faas.id>:<port> in the final metric.
-		// But since <faas.id> is unavailable until the gcp resource detector
+		// The `instance` label will be <faas.instance>:<port> in the final metric.
+		// But since <faas.instance> is unavailable until the gcp resource detector
 		// runs later in the pipeline we just populate the port for now.
 		//
 		// See the usage of PrefixResourceAttribute for when the rest of the

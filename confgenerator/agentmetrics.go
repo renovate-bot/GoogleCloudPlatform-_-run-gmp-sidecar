@@ -52,28 +52,28 @@ func (r AgentSelfMetrics) OTelReceiverPipeline() otel.ReceiverPipeline {
 			otel.MetricsFilter(
 				"include",
 				"strict",
-				"otelcol_process_uptime",
-				"otelcol_process_memory_rss",
-				"grpc_client_attempt_duration",
-				"googlecloudmonitoring_point_count",
+				"otelcol_process_uptime_seconds_total",
+				"otelcol_process_memory_rss_bytes",
+				"grpc_client_attempt_duration_seconds",
+				"googlecloudmonitoring_point_count_total",
 			),
 			otel.Transform("metric", "metric",
 				// create new count metric from histogram metric
-				otel.ExtractCountMetric(true, "grpc_client_attempt_duration"),
+				otel.ExtractCountMetric(true, "grpc_client_attempt_duration_seconds"),
 			),
 			otel.MetricsTransform(
-				otel.RenameMetric("otelcol_process_uptime", "agent/uptime",
+				otel.RenameMetric("otelcol_process_uptime_seconds_total", "agent/uptime",
 					// change data type from double -> int64
 					otel.ToggleScalarDataType,
 					otel.AddLabel("version", r.Version),
 					// remove service.version label
 					otel.AggregateLabels("sum", "version"),
 				),
-				otel.RenameMetric("otelcol_process_memory_rss", "agent/memory_usage",
+				otel.RenameMetric("otelcol_process_memory_rss_bytes", "agent/memory_usage",
 					// remove service.version label
 					otel.AggregateLabels("sum"),
 				),
-				otel.RenameMetric("grpc_client_attempt_duration_count", "agent/api_request_count",
+				otel.RenameMetric("grpc_client_attempt_duration_seconds_count", "agent/api_request_count",
 					// TODO: below is proposed new configuration for the metrics transform processor
 					// ignore any non "google.monitoring" RPCs (note there won't be any other RPCs for now)
 					// - action: select_label_values
@@ -83,7 +83,7 @@ func (r AgentSelfMetrics) OTelReceiverPipeline() otel.ReceiverPipeline {
 					// delete grpc_client_method dimension & service.version label, retaining only state
 					otel.AggregateLabels("sum", "state"),
 				),
-				otel.RenameMetric("googlecloudmonitoring_point_count", "agent/monitoring/point_count",
+				otel.RenameMetric("googlecloudmonitoring_point_count_total", "agent/monitoring/point_count",
 					// change data type from double -> int64
 					otel.ToggleScalarDataType,
 					// Remove service.version label
@@ -95,7 +95,7 @@ func (r AgentSelfMetrics) OTelReceiverPipeline() otel.ReceiverPipeline {
 			otel.TransformationMetrics(
 				otel.AddMetricLabel("namespace", r.Service),
 				otel.AddMetricLabel("cluster", "__run__"),
-				otel.PrefixResourceAttribute("service.instance.id", "faas.id", ":"),
+				otel.PrefixResourceAttribute("service.instance.id", "faas.instance", ":"),
 			),
 			otel.GroupByGMPAttrs(),
 		},

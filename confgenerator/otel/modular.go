@@ -60,7 +60,18 @@ func (c ModularConfig) Generate() (string, error) {
 		"pipelines": pipelines,
 		"telemetry": {
 			"metrics": map[string]interface{}{
-				"address": fmt.Sprintf("0.0.0.0:%d", c.SelfMetricsPort),
+				"readers": []map[string]interface{}{
+					{
+						"pull": map[string]interface{}{
+							"exporter": map[string]interface{}{
+								"prometheus": map[string]interface{}{
+									"host": "0.0.0.0",
+									"port": c.SelfMetricsPort,
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 	}

@@ -15,6 +15,8 @@
 package service
 
 import (
+	"go.opentelemetry.io/collector/component"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
@@ -35,6 +37,7 @@ import (
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	"go.uber.org/multierr"
 
 	"github.com/GoogleCloudPlatform/run-gmp-sidecar/collector/exporter/googlemanagedprometheusexporter"
@@ -52,7 +55,7 @@ func components() (otelcol.Factories, error) {
 	for _, ext := range factories.Extensions {
 		extensions = append(extensions, ext)
 	}
-	factories.Extensions, err = extension.MakeFactoryMap(extensions...)
+	factories.Extensions, err = otelcol.MakeFactoryMap[extension.Factory](extensions...)
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -63,7 +66,7 @@ func components() (otelcol.Factories, error) {
 	for _, rcv := range factories.Receivers {
 		receivers = append(receivers, rcv)
 	}
-	factories.Receivers, err = receiver.MakeFactoryMap(receivers...)
+	factories.Receivers, err = otelcol.MakeFactoryMap[receiver.Factory](receivers...)
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -76,7 +79,7 @@ func components() (otelcol.Factories, error) {
 	for _, exp := range factories.Exporters {
 		exporters = append(exporters, exp)
 	}
-	factories.Exporters, err = exporter.MakeFactoryMap(exporters...)
+	factories.Exporters, err = otelcol.MakeFactoryMap[exporter.Factory](exporters...)
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -92,7 +95,7 @@ func components() (otelcol.Factories, error) {
 	for _, pr := range factories.Processors {
 		processors = append(processors, pr)
 	}
-	factories.Processors, err = processor.MakeFactoryMap(processors...)
+	factories.Processors, err = otelcol.MakeFactoryMap[processor.Factory](processors...)
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -106,24 +109,24 @@ func Components() (
 ) {
 	var errs error
 
-	extensions, err := extension.MakeFactoryMap(
+	extensions, err := otelcol.MakeFactoryMap[extension.Factory](
 		zpagesextension.NewFactory(),
 	)
 	errs = multierr.Append(errs, err)
 
-	receivers, err := receiver.MakeFactoryMap(
+	receivers, err := otelcol.MakeFactoryMap[receiver.Factory](
 		otlpreceiver.NewFactory(),
 	)
 	errs = multierr.Append(errs, err)
 
-	exporters, err := exporter.MakeFactoryMap(
+	exporters, err := otelcol.MakeFactoryMap[exporter.Factory](
 		debugexporter.NewFactory(),
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
 	)
 	errs = multierr.Append(errs, err)
 
-	processors, err := processor.MakeFactoryMap(
+	processors, err := otelcol.MakeFactoryMap[processor.Factory](
 		batchprocessor.NewFactory(),
 		memorylimiterprocessor.NewFactory(),
 	)
@@ -134,6 +137,7 @@ func Components() (
 		Receivers:  receivers,
 		Processors: processors,
 		Exporters:  exporters,
+		Telemetry:  otelconftelemetry.NewFactory(),
 	}
 
 	return factories, errs
